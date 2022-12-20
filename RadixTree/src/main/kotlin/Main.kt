@@ -1,11 +1,10 @@
 
 import dev.henkle.trees.ad.Filter
-import dev.henkle.trees.radix.RadixTree
+import dev.henkle.trees.ad.FilterTree
 import dev.henkle.trees.radix.ReversedRadixTree
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
-import java.net.URL
+import kotlinx.serialization.json.*
+import java.io.File
 
 @OptIn(ExperimentalSerializationApi::class)
 fun main(){
@@ -18,59 +17,37 @@ fun main(){
     val filterObjects = json.decodeFromStream<List<Filter>>(Main::class.java.getResourceAsStream("/blocklist.json"))
     jsonStream.close()
 
-    val filters = filterObjects.map{
-        it.trigger.urlFilter
+    val filters = filterObjects.map{ filter ->
+        filter.trigger.urlFilter
             .substringAfterLast('?')
-            .replace("\\", "")
+            .replace("\\", "") to
+                filter.trigger.unlessDomain.map{ it.replace("*", "") }
     }
 
-    val filterRegexes = filterObjects.map{ it.trigger.urlFilter.toRegex() }
-
-    val tree = ReversedRadixTree()
-    for(filter in filters){
-        tree.addString(filter)
-    }
-//    tree.print()
-//    println("serialized: ${tree.sprint()}")
-
-    val allDomains = filters.map{ "https://${getDomain(it)}" }.toMutableList()
-    val testUrls = mutableListOf<String>()
-    repeat(5_500){
-        val domain = allDomains.random()
-        allDomains.remove(domain)
-        testUrls.add(domain)
+    val filterTree = FilterTree()
+    var exceptionTree: FilterTree
+    for((filter, exceptions) in filters){
+        exceptionTree = FilterTree()
+        exceptions.forEach { exception -> exceptionTree.addFilter(filter = exception, exceptions = null) }
+        filterTree.addFilter(
+            filter = filter,
+            exceptions = exceptionTree
+        )
     }
 
-    var start = System.nanoTime()
-    var domain: String
-    var treeBlockCount = 0
-    for(url in testUrls){
-        domain = getDomain(url)
-        if(tree.exists(domain)){
-            treeBlockCount += 1
-        } else{
-            println("tree: did not match url '$url' ($domain)")
-        }
-    }
-    val treeElapsed = System.nanoTime() - start
-    println("tree elapsed: ${treeElapsed / 1_000_000}ms")
+    filterTree.print()
 
-    start = System.nanoTime()
-    var regexBlockCount = 0
-    outer@for(url in testUrls) {
-        for(regex in filterRegexes){
-            if(regex.matches(url)){
-                regexBlockCount += 1
-                continue@outer
-            }
-        }
-        println("regex: did not match url '$url'")
+    File("blocklist").bufferedWriter().use{ writer ->
+        writer.write(filterTree.serialize())
     }
-    val regexElapsed = System.nanoTime() - start
-    println("regex elapsed: ${regexElapsed / 1_000_000}ms")
-    println("tree blocked: $treeBlockCount")
-    println("regex blocked: $regexBlockCount")
-    println("radix tree was ${regexElapsed / treeElapsed}x faster")
+
+    println("ads.tiktok.com: ${filterTree.matchesFilter(url = "ads.tiktok.com", exact = false)}")
+    println("ad.tiktok.com: ${filterTree.matchesFilter(url = "ad.tiktok.com", exact = false)}")
+    println("analytics.tiktok.com: ${filterTree.matchesFilter(url = "analytics.tiktok.com", exact = false)}")
+    println("ads-sg.tiktok.com: ${filterTree.matchesFilter(url = "ads-sg.tiktok.com", exact = false)}")
+    println("tiktok.com: ${filterTree.matchesFilter(url = "tiktok.com", exact = false)}")
+    println("pasta.tiktok.com: ${filterTree.matchesFilter(url = "pasta.tiktok.com", exact = false)}")
+    println("trending.tiktok.com: ${filterTree.matchesFilter(url = "trending.tiktok.com", exact = false)}")
 }
 
 private fun getDomain(url: String): String{
@@ -91,3 +68,57 @@ private fun getDomain(url: String): String{
 }
 
 object Main
+
+
+
+
+val test = arrayOf(
+    "remains",
+    "remain",
+    "remainder",
+    "remainders",
+    "reps",
+    "repeat",
+    "repeats",
+    "sredn",
+    "asredn",
+    "sredns",
+    "sredne",
+    "srednes",
+    "remains",
+    "remain",
+    "remainder",
+    "remainders",
+    "reps",
+    "repeat",
+    "repeats",
+    "sredn",
+    "asredn",
+    "sredns",
+    "sredne",
+    "srednes",
+    "remains",
+    "remain",
+    "remainder",
+    "remainders",
+    "reps",
+    "repeat",
+    "repeats",
+    "sredn",
+    "asredn",
+    "sredns",
+    "sredne",
+    "srednes",
+    "remains",
+    "remain",
+    "remainder",
+    "remainders",
+    "reps",
+    "repeat",
+    "repeats",
+    "sredn",
+    "asredn",
+    "sredns",
+    "sredne",
+    "srednes"
+)

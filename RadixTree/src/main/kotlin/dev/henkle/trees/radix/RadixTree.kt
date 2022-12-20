@@ -2,14 +2,14 @@ package dev.henkle.trees.radix
 
 import kotlin.math.min
 
-class RadixTree {
-    private val root = RadixTreeNode(isTerminal = false)
+class RadixTree : IRadixTree<RadixTreeNode, RadixTreeEdge>(){
+    override val root = RadixTreeNode(isTerminal = false)
 
-    fun addString(string: String){
+    override fun addString(string: String){
         root.addEdge(string)
     }
 
-    fun removeString(string: String): Boolean =
+    override fun removeString(string: String): Boolean =
         root.removeEdge(label = string) != null
 
     private fun exists(string: String, exact: Boolean): Boolean{
@@ -32,9 +32,22 @@ class RadixTree {
         return !exact || currentEdge?.target?.isTerminal == true
     }
 
-    fun exists(string: String): Boolean = exists(string = string, exact = true)
+    override fun exists(string: String): Boolean = exists(string = string, exact = true)
     fun prefixExists(string: String): Boolean = exists(string = string, exact = false)
 
-    fun print() = root.print()
-    fun sprint(): String = root.sprint()
+    override fun print() = root.print()
+
+    fun deserialize(
+        serializedTree: String,
+        separatorChar: Char = ',',
+        leafChar: Char = ']',
+        nonTerminalChar: Char = '}',
+        layerSeparatorChar: Char = '|',
+    ) = deserialize(
+        serializedTree,
+        separatorChar,
+        leafChar,
+        nonTerminalChar,
+        layerSeparatorChar
+    ){ terminal -> RadixTreeNode(isTerminal = terminal) }
 }

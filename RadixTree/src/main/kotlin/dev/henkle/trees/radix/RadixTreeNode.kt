@@ -10,7 +10,7 @@ import kotlin.math.min
  * that terminates at this node. The path from root to a terminal node will always form a string that has been
  * inserted into the tree, while the opposite is always true for a non-terminal node.
  */
-internal class RadixTreeNode(var isTerminal: Boolean = true){
+class RadixTreeNode(var isTerminal: Boolean = true): IRadixTreeNode<RadixTreeNode, RadixTreeEdge>{
     /**
      * A map of all edges that originate at this node by their first character.
      */
@@ -24,13 +24,13 @@ internal class RadixTreeNode(var isTerminal: Boolean = true){
     /**
      * Retrieves the edge with the first character [firstChar], if one exists.
      */
-    fun getEdge(firstChar: Char): RadixTreeEdge? = edges?.get(firstChar)
+    override fun getEdge(firstChar: Char): RadixTreeEdge? = edges?.get(firstChar)
 
     /**
      * Adds an edge with an explicit label and target node. This can only be used if the inserted edge is
      * known to be valid ahead of time.
      */
-    private fun addEdge(label: String, target: RadixTreeNode){
+    override fun addEdge(label: String, target: RadixTreeNode){
         edges.getOrCreate{ edges = it }[label[0]] = RadixTreeEdge(
             label = label,
             target = target
@@ -46,10 +46,10 @@ internal class RadixTreeNode(var isTerminal: Boolean = true){
      * @param start The index within [label] that determines where the current segment starts.
      * @param end The index within [label] that determines where the current segment ends, exclusive.
      */
-    fun addEdge(
+    override fun addEdge(
         label: String,
-        start: Int = 0,
-        end: Int = label.length
+        start: Int,
+        end: Int
     ): RadixTreeEdge{
         val edgeMap = edges.getOrCreate{ edges = it }
         val firstChar = label[start]
@@ -117,11 +117,11 @@ internal class RadixTreeNode(var isTerminal: Boolean = true){
      *
      * @return the removed edge or null if no edge was removed.
      */
-    fun removeEdge(
+    override fun removeEdge(
         label: String,
-        start: Int = 0,
-        end: Int = label.length,
-        parentEdge: RadixTreeEdge? = null
+        start: Int,
+        end: Int,
+        parentEdge: RadixTreeEdge?
     ): RadixTreeEdge? = edges?.run{
         get(label[start])?.let{ edge ->
             val searchLabelLength = end - start
@@ -158,10 +158,10 @@ internal class RadixTreeNode(var isTerminal: Boolean = true){
      * @param nonTerminalChar The character to suffix on node labels to indicate non-terminal nodes.
      * @param leafChar The character
      */
-    internal fun print(
-        depth: Int = 0,
-        nonTerminalChar: Char = '*',
-        leafChar: Char = ']'
+    override fun print(
+        depth: Int,
+        nonTerminalChar: Char,
+        leafChar: Char
     ){
         val prefix = "   ".repeat(depth)
         edges?.forEach{ (_, edge) ->
@@ -179,12 +179,17 @@ internal class RadixTreeNode(var isTerminal: Boolean = true){
      * @param separatorChar The character to separate the nodes.
      * @param leafChar The character to suffix on node labels to indicate leaf nodes.
      */
-    internal fun sprint(
-        depth: Int = 0,
-        separatorChar: Char = ',',
-        leafChar: Char = ']',
+    override fun sprint(
+        depth: Int,
+        separatorChar: Char,
+        nonTerminalChar: Char,
+        layerSeparator: String,
+        leafChar: Char,
     ): String = edges?.map{ (_, edge) ->
         val leafIndicator = if(edge.target.edges.isNullOrEmpty()) leafChar else ""
-        "${edge.label}$leafIndicator$separatorChar" + edge.target.sprint(depth + 1)
-    }?.joinToString(separator = "")?.run{ if(depth == 0) substring(0, lastIndex) else this } ?: ""
+        val formattedLabel = if(edge.target.isTerminal) edge.label else "${edge.label}$nonTerminalChar"
+        "$formattedLabel$leafIndicator$separatorChar" + edge.target.sprint(depth + 1)
+    }?.joinToString(separator = "", postfix = layerSeparator)
+        ?.run{ if(depth == 0) substring(0, lastIndex) else this }
+        ?: ""
 }

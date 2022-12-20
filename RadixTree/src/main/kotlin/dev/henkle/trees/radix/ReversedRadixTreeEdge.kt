@@ -1,3 +1,6 @@
 package dev.henkle.trees.radix
 
-internal data class ReversedRadixTreeEdge(var label: String, val target: ReversedRadixTreeNode)
+data class ReversedRadixTreeEdge(
+    override var label: String,
+    override val target: ReversedRadixTreeNode
+) : IRadixTreeEdge<ReversedRadixTreeEdge, ReversedRadixTreeNode>

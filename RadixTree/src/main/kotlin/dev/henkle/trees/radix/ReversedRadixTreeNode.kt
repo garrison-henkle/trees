@@ -11,7 +11,9 @@ import kotlin.math.min
  * that terminates at this node. The path from root to a terminal node will always form a string that has been
  * inserted into the tree, while the opposite is always true for a non-terminal node.
  */
-internal class ReversedRadixTreeNode(var isTerminal: Boolean = true){
+class ReversedRadixTreeNode(
+    var isTerminal: Boolean = true
+): IRadixTreeNode<ReversedRadixTreeNode, ReversedRadixTreeEdge>{
     /**
      * A map of all edges that originate at this node by their first character.
      */
@@ -25,13 +27,13 @@ internal class ReversedRadixTreeNode(var isTerminal: Boolean = true){
     /**
      * Retrieves the edge with the first character [firstChar], if one exists.
      */
-    fun getEdge(firstChar: Char): ReversedRadixTreeEdge? = edges?.get(firstChar)
+    override fun getEdge(firstChar: Char): ReversedRadixTreeEdge? = edges?.get(firstChar)
 
     /**
      * Adds an edge with an explicit label and target node. This can only be used if the inserted edge is
      * known to be valid ahead of time.
      */
-    private fun addEdge(label: String, target: ReversedRadixTreeNode){
+    override fun addEdge(label: String, target: ReversedRadixTreeNode){
         edges.getOrCreate{ edges = it }[label[0]] = ReversedRadixTreeEdge(
             label = label,
             target = target
@@ -47,10 +49,10 @@ internal class ReversedRadixTreeNode(var isTerminal: Boolean = true){
      * @param start The index within [label] that determines where the current segment starts.
      * @param end The index within [label] that determines where the current segment ends, exclusive.
      */
-    fun addEdge(
+    override fun addEdge(
         label: String,
-        start: Int = 0,
-        end: Int = label.length
+        start: Int,
+        end: Int
     ): ReversedRadixTreeEdge{
         val edgeMap = edges.getOrCreate{ edges = it }
         val firstChar = label[end - 1]
@@ -118,11 +120,11 @@ internal class ReversedRadixTreeNode(var isTerminal: Boolean = true){
      *
      * @return the removed edge or null if no edge was removed.
      */
-    fun removeEdge(
+    override fun removeEdge(
         label: String,
-        start: Int = 0,
-        end: Int = label.length,
-        parentEdge: ReversedRadixTreeEdge? = null
+        start: Int,
+        end: Int,
+        parentEdge: ReversedRadixTreeEdge?
     ): ReversedRadixTreeEdge? = edges?.run{
         get(label[start])?.let{ edge ->
             val searchLabelLength = end - start
@@ -159,10 +161,10 @@ internal class ReversedRadixTreeNode(var isTerminal: Boolean = true){
      * @param nonTerminalChar The character to suffix on node labels to indicate non-terminal nodes.
      * @param leafChar The character
      */
-    internal fun print(
-        depth: Int = 0,
-        nonTerminalChar: Char = '*',
-        leafChar: Char = ']'
+    override fun print(
+        depth: Int,
+        nonTerminalChar: Char,
+        leafChar: Char
     ){
         val prefix = "   ".repeat(depth)
         edges?.forEach{ (_, edge) ->
@@ -180,12 +182,17 @@ internal class ReversedRadixTreeNode(var isTerminal: Boolean = true){
      * @param separatorChar The character to separate the nodes.
      * @param leafChar The character to suffix on node labels to indicate leaf nodes.
      */
-    internal fun sprint(
-        depth: Int = 0,
-        separatorChar: Char = ',',
-        leafChar: Char = ']',
+    override fun sprint(
+        depth: Int,
+        separatorChar: Char,
+        nonTerminalChar: Char,
+        layerSeparator: String,
+        leafChar: Char,
     ): String = edges?.map{ (_, edge) ->
         val leafIndicator = if(edge.target.edges.isNullOrEmpty()) leafChar else ""
-        "${edge.label}$leafIndicator$separatorChar" + edge.target.sprint(depth + 1)
-    }?.joinToString(separator = "")?.run{ if(depth == 0) substring(0, lastIndex) else this } ?: ""
+        val formattedLabel = if(edge.target.isTerminal) edge.label else "${edge.label}$nonTerminalChar"
+        "$formattedLabel$leafIndicator$separatorChar" + edge.target.sprint(depth + 1)
+    }?.joinToString(separator = "", postfix = layerSeparator)
+        ?.run{ if(depth == 0) substring(0, lastIndex) else this }
+        ?: ""
 }

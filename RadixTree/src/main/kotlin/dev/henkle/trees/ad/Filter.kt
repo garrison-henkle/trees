@@ -7,4 +7,7 @@ import kotlinx.serialization.Serializable
 data class Filter(val trigger: Trigger)
 
 @Serializable
-data class Trigger(@SerialName("url-filter") val urlFilter: String)
+data class Trigger(
+    @SerialName("url-filter") val urlFilter: String,
+    @SerialName("unless-domain") val unlessDomain: List<String>
+)

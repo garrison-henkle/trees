@@ -2,8 +2,8 @@ package dev.henkle.trees.radix
 
 import kotlin.math.min
 
-class ReversedRadixTree : IRadixTree{
-    private val root = ReversedRadixTreeNode(isTerminal = false)
+class ReversedRadixTree : IRadixTree<ReversedRadixTreeNode, ReversedRadixTreeEdge>(){
+    override val root = ReversedRadixTreeNode(isTerminal = false)
 
     override fun addString(string: String){
         root.addEdge(string)
@@ -37,5 +37,18 @@ class ReversedRadixTree : IRadixTree{
     fun suffixExists(string: String): Boolean = exists(string = string, exact = false)
 
     override fun print() = root.print()
-    override fun sprint(): String = root.sprint()
+
+    fun deserialize(
+        serializedTree: String,
+        separatorChar: Char = ',',
+        leafChar: Char = ']',
+        nonTerminalChar: Char = '}',
+        layerSeparatorChar: Char = '|',
+    ) = deserialize(
+        serializedTree,
+        separatorChar,
+        leafChar,
+        nonTerminalChar,
+        layerSeparatorChar
+    ){ terminal -> ReversedRadixTreeNode(isTerminal = terminal) }
 }

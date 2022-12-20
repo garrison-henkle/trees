@@ -1,3 +1,6 @@
 package dev.henkle.trees.radix
 
-internal data class RadixTreeEdge(var label: String, val target: RadixTreeNode)
+data class RadixTreeEdge(
+    override var label: String,
+    override val target: RadixTreeNode
+) : IRadixTreeEdge<RadixTreeEdge, RadixTreeNode>
