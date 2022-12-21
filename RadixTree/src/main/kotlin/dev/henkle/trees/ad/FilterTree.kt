@@ -5,8 +5,9 @@ import kotlin.math.min
 
 class FilterTree {
     private val root = FilterTreeNode(isTerminal = false)
+    val id get() = root.id
 
-    fun addFilter(filter: String, exceptions: FilterTree?){
+    fun addFilter(filter: String, exceptions: FilterTree? = null){
         root.addEdge(label = filter, exceptions = exceptions)
     }
 
@@ -19,16 +20,14 @@ class FilterTree {
         var currentCharIndex = domain.lastIndex
         var currentNode: FilterTreeNode? = root
         var currentEdge: FilterTreeEdge? = null
-        var currentLabel: String? = null
+        var currentLabel: String?
         while(currentCharIndex >= 0){
             currentEdge = currentNode?.getEdge(domain[currentCharIndex--])
             currentLabel = currentEdge?.label
             if(currentLabel != null){
                 for(i in 1 until min(currentLabel.length, domain.length)){
                     if(currentCharIndex < 0) break
-                    if(currentLabel[i] != domain[currentCharIndex]){
-                        return false
-                    }
+                    if(currentLabel[i] != domain[currentCharIndex]) return false
                     currentCharIndex -= 1
                 }
             }
@@ -36,7 +35,6 @@ class FilterTree {
             if(currentNode == null) break
         }
         return if(!exact || currentEdge?.target?.isTerminal == true){
-//            println("checking if $url matches ${currentEdge?.target?.exceptions?.serialize()}")
             println("would return true, but got ${currentEdge?.target?.exceptions?.matchesFilter(url = url, exact = exact)?.not() ?: false}")
             currentEdge?.target?.exceptions?.matchesFilter(url = url, exact = exact)?.not() ?: false
         } else false
@@ -62,49 +60,42 @@ class FilterTree {
     fun print() = root.print()
 
     fun serialize(
-        separatorChar: Char = ',',
-        nonTerminalChar: Char = '}',
-        layerSeparator: String = "|,",
-        leafChar: Char = ']',
-        exceptionsSeparator: Char = '!',
+        chars: SerializationCharacters = SerializationCharacters()
     ): String = root.sprint(
         depth = 0,
-        separatorChar = separatorChar,
-        nonTerminalChar = nonTerminalChar,
-        layerSeparator = layerSeparator,
-        leafChar = leafChar,
-        exceptionsSeparator = exceptionsSeparator,
+        chars = chars
     )
 
     fun deserialize(
         serializedTree: String,
-        separatorChar: Char = ',',
-        leafChar: Char = ']',
-        nonTerminalChar: Char = '}',
-        layerSeparatorChar: Char = '|',
-        exceptionsSeparator: Char = '!',
+        chars: SerializationCharacters = SerializationCharacters()
     ){
         val stack = Stack<FilterTreeNode>().apply{ push(root) }
-        val edges = serializedTree.split(separatorChar)
+        val edges = serializedTree.split(chars.separator)
         var split: List<String>
         var label: String
         var exceptionTree: FilterTree?
         for(edge in edges){
-            split = edge.split(exceptionsSeparator)
+//            todo println("${if(chars == SerializationCharacters.exceptions) "   " else ""}deserializing edge: '$edge'. Stack: $stack")
+            if(edge.isEmpty()){
+                stack.pop()
+                continue
+            }
+            split = edge.split(chars.divider)
             label = split[1]
-            exceptionTree = FilterTree().apply{
-                if(split[0].isNotEmpty()){
-                    deserialize(split[0])
+            exceptionTree = split[0].ifEmpty { null }?.let{ exceptions ->
+                FilterTree().apply{
+                    deserialize(serializedTree = exceptions, chars = SerializationCharacters.exceptions)
                 }
             }
             when(label.last()){
-                leafChar -> {
+                chars.leaf -> {
                     stack.peek().addEdge(
                         label = label.substring(0, label.lastIndex),
                         target = FilterTreeNode(isTerminal = true, exceptions = exceptionTree)
                     )
                 }
-                nonTerminalChar -> {
+                chars.nonTerminal -> {
                     val node = FilterTreeNode(isTerminal = false)
                     stack.apply{
                         peek().addEdge(
@@ -114,7 +105,6 @@ class FilterTree {
                         push(node)
                     }
                 }
-                layerSeparatorChar -> stack.pop()
                 else -> {
                     val node = FilterTreeNode(isTerminal = true, exceptions = exceptionTree)
                     stack.apply{
@@ -126,6 +116,22 @@ class FilterTree {
                     }
                 }
             }
+        }
+    }
+
+    data class SerializationCharacters(
+        val separator: Char = ',',
+        val nonTerminal: Char = ')',
+        val leaf: Char = ']',
+        val divider: Char = '!'
+    ){
+        companion object{
+            val exceptions = SerializationCharacters(
+                separator = ';',
+                nonTerminal = '(',
+                leaf = '[',
+                divider = '#'
+            )
         }
     }
 }

@@ -1,12 +1,16 @@
 package dev.henkle.trees.ad
 
 import dev.henkle.trees.utils.getOrCreate
+import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.min
 
 class FilterTreeNode(
     var isTerminal: Boolean = true,
     val exceptions: FilterTree? = null
 ) {
+    companion object{ private val idCounter = AtomicInteger() }
+    val id = idCounter.getAndIncrement()
+
     /**
      * A map of all edges that originate at this node by their first character.
      */
@@ -141,7 +145,7 @@ class FilterTreeNode(
                 edge.target.removeEdge(
                     parentEdge = edge,
                     label = label,
-                    start = label.length,
+                    start = start + label.length,
                     end = end
                 )
             }
@@ -164,7 +168,7 @@ class FilterTreeNode(
         edges?.forEach{ (_, edge) ->
             val label = if(edge.target.isTerminal) edge.label else "${edge.label}$nonTerminalChar"
             val leafIndicator = if(edge.target.edges.isNullOrEmpty()) leafChar else ""
-            println("$prefix- $label$leafIndicator (${edge.target.exceptions?.serialize() ?: ""})")
+            println("$prefix- $label$leafIndicator <${edge.target.exceptions?.serialize() ?: ""}>")
             edge.target.print(depth + 1)
         }
     }
@@ -178,17 +182,17 @@ class FilterTreeNode(
      */
     fun sprint(
         depth: Int = 0,
-        separatorChar: Char = ',',
-        nonTerminalChar: Char = '}',
-        layerSeparator: String = "|,",
-        leafChar: Char = ']',
-        exceptionsSeparator: Char = '!',
+        chars: FilterTree.SerializationCharacters = FilterTree.SerializationCharacters()
     ): String = edges?.map{ (_, edge) ->
-        val leafIndicator = if(edge.target.edges.isNullOrEmpty()) leafChar else ""
-        val formattedLabel = if(edge.target.isTerminal) edge.label else "${edge.label}$nonTerminalChar"
-        val exceptions = if(edge.target.exceptions != null) edge.target.exceptions.serialize() else ""
-        "$exceptions$exceptionsSeparator$formattedLabel$leafIndicator$separatorChar" + edge.target.sprint(depth + 1)
-    }?.joinToString(separator = "", postfix = layerSeparator)
+        val leafIndicator = if(edge.target.edges.isNullOrEmpty()) chars.leaf else ""
+        val formattedLabel = if(edge.target.isTerminal) edge.label else "${edge.label}${chars.nonTerminal}"
+        val exceptions = if(edge.target.exceptions != null){
+            edge.target.exceptions.serialize(chars = FilterTree.SerializationCharacters.exceptions)
+        } else ""
+        "$exceptions${chars.divider}$formattedLabel$leafIndicator${chars.separator}${edge.target.sprint(depth + 1, chars = chars)}"
+    }?.joinToString(separator = "", postfix = chars.separator.toString())
         ?.run{ if(depth == 0) substring(0, lastIndex) else this }
         ?: ""
+
+    override fun toString(): String = id.toString()
 }

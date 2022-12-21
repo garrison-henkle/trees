@@ -35,19 +35,49 @@ fun main(){
         )
     }
 
-    filterTree.print()
-
-    File("blocklist").bufferedWriter().use{ writer ->
-        writer.write(filterTree.serialize())
+    val serialized = filterTree.serialize()
+    val filterTreeCopy = FilterTree().apply{
+        deserialize(serialized)
     }
+    val reSerialized = filterTreeCopy.serialize()
+    println("serialized  : ${serialized.substring(0..100)}")
+    println("reSerialized: ${reSerialized.substring(0..100)}")
+    println("same: ${reSerialized == serialized}")
 
-    println("ads.tiktok.com: ${filterTree.matchesFilter(url = "ads.tiktok.com", exact = false)}")
-    println("ad.tiktok.com: ${filterTree.matchesFilter(url = "ad.tiktok.com", exact = false)}")
-    println("analytics.tiktok.com: ${filterTree.matchesFilter(url = "analytics.tiktok.com", exact = false)}")
-    println("ads-sg.tiktok.com: ${filterTree.matchesFilter(url = "ads-sg.tiktok.com", exact = false)}")
-    println("tiktok.com: ${filterTree.matchesFilter(url = "tiktok.com", exact = false)}")
-    println("pasta.tiktok.com: ${filterTree.matchesFilter(url = "pasta.tiktok.com", exact = false)}")
-    println("trending.tiktok.com: ${filterTree.matchesFilter(url = "trending.tiktok.com", exact = false)}")
+//    val serialized = filterTree.serialize()
+//    val reSerialized = FilterTree().apply{
+//        deserialize(serialized)
+//    }.serialize()
+//    println("same: ${serialized == reSerialized}")
+//
+//    File("blocklist").bufferedWriter().use{ writer ->
+//        writer.write(filterTree.serialize())
+//    }
+
+
+//    val tree = FilterTree().apply{
+//        for((filter, exceptions) in test){
+//            val exceptionTree = FilterTree().apply{
+//                for(exception in exceptions){
+//                    addFilter(exception)
+//                }
+//            }
+//            addFilter(filter, exceptionTree)
+//        }
+//    }
+//    tree.print()
+//    println("root id is ${tree.id}")
+//    val serialized = tree.serialize()
+//    val copy = FilterTree().apply{
+//        println("root id is $id")
+//        deserialize(serialized)
+//    }
+//    val reSerialized = copy.serialize()
+//    println("-".repeat(50))
+//    println("-".repeat(50))
+//    println("b: $serialized")
+//    println("a: $reSerialized")
+//    println("same: ${serialized == reSerialized}")
 }
 
 private fun getDomain(url: String): String{
@@ -73,52 +103,11 @@ object Main
 
 
 val test = arrayOf(
-    "remains",
-    "remain",
-    "remainder",
-    "remainders",
-    "reps",
-    "repeat",
-    "repeats",
-    "sredn",
-    "asredn",
-    "sredns",
-    "sredne",
-    "srednes",
-    "remains",
-    "remain",
-    "remainder",
-    "remainders",
-    "reps",
-    "repeat",
-    "repeats",
-    "sredn",
-    "asredn",
-    "sredns",
-    "sredne",
-    "srednes",
-    "remains",
-    "remain",
-    "remainder",
-    "remainders",
-    "reps",
-    "repeat",
-    "repeats",
-    "sredn",
-    "asredn",
-    "sredns",
-    "sredne",
-    "srednes",
-    "remains",
-    "remain",
-    "remainder",
-    "remainders",
-    "reps",
-    "repeat",
-    "repeats",
-    "sredn",
-    "asredn",
-    "sredns",
-    "sredne",
-    "srednes"
+    "google.ru" to arrayOf("google.ru", "google.tu", "google.au"),
+    "google.tu" to arrayOf("google.tu", "google.tu", "google.au"),
+    "google.au" to arrayOf("google.au", "google.tu", "google.au"),
+    "ads.google.ru" to arrayOf("ads.google.ru", "google.tu", "google.au"),
+    "ads.google.au" to arrayOf("ads.google.au", "google.tu", "google.au"),
+    "gooogle.au" to arrayOf("gooogle.au", "google.tu", "google.au"),
+    "gooogle.ru" to arrayOf("gooogle.ru", "google.tu", "google.au")
 )
