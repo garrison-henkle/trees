@@ -7,7 +7,7 @@ None of them are particularly optimized, so I wouldn't recommend using them if y
 
 # License
 
-Copyright 2024-2025 Garrison Henkle
+Copyright 2022 Garrison Henkle
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
